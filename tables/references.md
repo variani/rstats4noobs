@@ -17,4 +17,13 @@
 Discussions
 
 * https://www.linkedin.com/groups/SQL-versus-dataframe-operations-4066593.S.5898373502418829316
-* 
+
+## HDF5
+
+R packages
+
+* http://www.bioconductor.org/packages/release/bioc/html/rhdf5.html
+
+Discussions
+
+* http://stackoverflow.com/questions/15974643/how-to-deal-with-hdf5-files-in-r
