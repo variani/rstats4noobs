@@ -28,7 +28,7 @@ Read from several files
 Discussions
 
 * https://www.linkedin.com/groups/SQL-versus-dataframe-operations-4066593.S.5898373502418829316
-
+* dplyr vs data.table: http://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly
 ## HDF5
 
 R packages
