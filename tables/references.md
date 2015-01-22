@@ -7,6 +7,17 @@
 * http://gettinggeneticsdone.blogspot.com.es/2015/01/microbenchmark-package-r-compare-runtime-r-expressions.html
 * http://datascience.la/dplyr-and-a-very-basic-benchmark/
 
+## Read of files (tables)
+
+Experience
+
+* https://www.kaggle.com/c/acquire-valued-shoppers-challenge/forums/t/7883/r-fread-for-large-files/57288
+* http://davetang.org/muse/2013/09/03/handling-big-data-in-r/
+
+Read from several files
+
+* http://stackoverflow.com/questions/21156271/fast-reading-and-combining-several-files-using-data-table-with-fread
+
 ## SQL
 
 * Learn-sql links from http://cran.r-project.org/web/packages/dplyr/vignettes/databases.html
