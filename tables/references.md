@@ -14,9 +14,12 @@ Experience
 * https://www.kaggle.com/c/acquire-valued-shoppers-challenge/forums/t/7883/r-fread-for-large-files/57288
 * http://davetang.org/muse/2013/09/03/handling-big-data-in-r/
 
-Read from several files
+Precicies
+* Read from several files: http://stackoverflow.com/questions/21156271/fast-reading-and-combining-several-files-using-data-table-with-fread
 
-* http://stackoverflow.com/questions/21156271/fast-reading-and-combining-several-files-using-data-table-with-fread
+Issues
+
+* Multiple spaces: http://stackoverflow.com/a/16979969/551589
 
 ## SQL
 
