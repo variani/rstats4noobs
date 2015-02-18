@@ -1,2 +1,3 @@
 # rstats4noobs
-Learn R (rstats)
+
+* http://www.sharpsightlabs.com/learn-r-data-science/
