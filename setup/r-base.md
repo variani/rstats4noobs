@@ -58,3 +58,10 @@ sudo R >
 install.packages("helpr", dependencies = T)
 ```
 
+### Other packages
+
+```
+sudo apt-get install libmysqlclient-dev
+sudo apt-get install libgtk2.0-dev
+sudo apt-get install libxml2-dev
+```
