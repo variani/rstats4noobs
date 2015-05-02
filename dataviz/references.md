@@ -5,3 +5,4 @@
 ## Wrappers to JS libs
 
 * http://hafen.github.io/rbokeh/
+* http://rich-iannone.github.io/DiagrammeR/mermaid.html
