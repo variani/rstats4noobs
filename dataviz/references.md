@@ -4,5 +4,9 @@
 
 ## Wrappers to JS libs
 
+Overview on http://www.jsgraphs.com/
+
 * http://hafen.github.io/rbokeh/
 * http://rich-iannone.github.io/DiagrammeR/mermaid.html
+* http://dataknowledge.github.io/visNetwork/
+ 
