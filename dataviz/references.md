@@ -1,6 +1,7 @@
 ## Dataviz
 
 * http://shinyapps.stat.ubc.ca/r-graph-catalog/ based on the book "Creating More effective graphs"
+* Tufte in R (examples) http://motioninsocial.com/tufte/
 
 ## Wrappers to JS libs
 
