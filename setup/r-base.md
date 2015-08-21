@@ -39,6 +39,15 @@ When is it necessary?
 
 ## Install packages
 
+### Error: `Warning: unable to access index for repository https://cran.r-project.org/src/contrib`
+
+via http://stackoverflow.com/questions/21595822/unable-to-install-package-shiny-on-r-3-0-2
+
+```
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+install.packages('shiny')
+```
+
 ### Package `helpr`
 
 Requires the latest version of R
