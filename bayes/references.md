@@ -11,6 +11,9 @@ Discussions
 
 * http://stats.stackexchange.com/questions/7351/bayesian-statistics-tutorial
 
+## Courses
+
+* https://github.com/petrkeil/Bayesian-biostatistics-2015/blob/master/T-test/t-test.md
 
 ## Blog posts
 
