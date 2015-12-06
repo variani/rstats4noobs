@@ -14,3 +14,4 @@ R vs SAS vs pyhton vs ...
 
 * http://www.datasciencecentral.com/forum/topics/which-one-is-best-r-sas-or-python-for-data-science
 * https://matloff.wordpress.com/2014/05/21/r-beats-python-r-beats-julia-anyone-else-wanna-challenge-r/
+* http://www.quora.com/Which-is-better-for-data-analysis-R-or-Python
