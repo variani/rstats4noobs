@@ -1,10 +1,16 @@
 # rstats4noobs
 
+Unsorted
+
 * http://www.sharpsightlabs.com/learn-r-data-science/
 * https://support.rstudio.com/hc/en-us/articles/201057987-Quick-list-of-useful-R-packages
 * https://github.com/jennybc/2015-02-23_bryan-fields-talk 
 * https://github.com/qinwf/awesome-R
 * http://vita.had.co.nz/papers/mutatr.pdf
+
+Lists of R resources 
+
+* https://github.com/qinwf/awesome-R
 
 To read:
 
