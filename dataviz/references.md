@@ -22,3 +22,8 @@ Overview on http://www.jsgraphs.com/
 An alternative to Venn diagrams
 
 * http://vcg.github.io/upset/about/#
+
+## People
+
+* https://twitter.com/mf_viz
+  * Course http://faculty.washington.edu/mikefree/info343/#/
