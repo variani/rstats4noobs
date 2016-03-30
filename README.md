@@ -7,6 +7,7 @@ Unsorted
 * https://github.com/jennybc/2015-02-23_bryan-fields-talk 
 * https://github.com/qinwf/awesome-R
 * http://vita.had.co.nz/papers/mutatr.pdf
+* R syntaxis https://ironholds.org/projects/rbitrary/
 
 Lists of R resources 
 
