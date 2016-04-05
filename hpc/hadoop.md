@@ -19,3 +19,19 @@ Issues
 
 * Warning `WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable`
       * http://www.ercoppa.org/Linux-Compile-Hadoop-220-fix-Unable-to-load-native-hadoop-library.htm
+
+## Install R packages for haddoop
+
+Configure Java path for R:
+
+```
+export JAVA_HOME=/usr/lib/jvm/java-7-oracle  
+export PATH=$PATH:$JAVA_HOME/bin
+R CMD javareconf
+```
+
+Install R packages, dependencies of hadoop-R:
+
+```
+install.packages(c("rJava", "Rcpp", "RJSONIO", "bitops", "digest", "functional", "stringr", "plyr", "reshape2"))
+```
