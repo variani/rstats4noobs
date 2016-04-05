@@ -14,3 +14,8 @@ Tutorials
 
 * http://www.bogotobogo.com/Linux/hadoop2_running_on_ubuntu_single_node_cluster.php
 * http://www.michael-noll.com/tutorials/running-hadoop-on-ubuntu-linux-single-node-cluster/
+
+Issues
+
+* Warning `WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable`
+      * http://www.ercoppa.org/Linux-Compile-Hadoop-220-fix-Unable-to-load-native-hadoop-library.htm
