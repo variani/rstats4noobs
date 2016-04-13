@@ -92,6 +92,7 @@ R code for testing (https://github.com/RevolutionAnalytics/rmr2/blob/master/docs
 ```
 library(rmr2)
 small.ints = to.dfs(1:1000)
+out <- from.dfs(mapreduce(input = small.ints, map = function(k, v) cbind(v, v^2)))
 ```
 
 ### Error: Permission denied
