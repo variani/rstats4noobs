@@ -20,7 +20,9 @@ Issues
 * Warning `WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable`
       * http://www.ercoppa.org/Linux-Compile-Hadoop-220-fix-Unable-to-load-native-hadoop-library.htm
 
-## Install R packages for haddoop
+## Install R-Haddoop
+
+### Install dependencies
 
 Configure Java path for R:
 
@@ -34,4 +36,49 @@ Install R packages, dependencies of hadoop-R:
 
 ```
 install.packages(c("rJava", "Rcpp", "RJSONIO", "bitops", "digest", "functional", "stringr", "plyr", "reshape2"))
+```
+
+### Install thrift
+
+* (for debian)http://thrift-tutorial.readthedocs.org/en/latest/installation.html
+
+### Install rhdfs, rhbase & rmr2 R packages
+
+* https://github.com/RevolutionAnalytics/RHadoop/wiki/Installing-RHadoop-on-RHEL
+
+Download packages:
+
+```
+wget https://raw.github.com/RevolutionAnalytics/rhdfs/blob/master/build/rhdfs_1.0.8.tar.gz?raw=true
+wget https://github.com/RevolutionAnalytics/rhbase/blob/master/build/rhbase_1.2.1.tar.gz?raw=true
+wget https://github.com/RevolutionAnalytics/rmr2/releases/download/3.3.1/rmr2_3.3.1.tar.gz
+```
+
+Configure thrift (http://stackoverflow.com/a/36427232/551589):
+
+```
+cd /usr/local/lib/pkgconfig
+sudo perl -pi -e 's{(^includedir=.*/include$)}{$1/thrift}' thrift.pc
+sudo perl -pi -e 's{(^Cflags:.*)}{$1 -std=c++11}' thrift.pc
+```
+
+See the changes:
+
+```
+hduser@debian:/usr/local/lib/pkgconfig$ diff thrift.pc.bck thrift.pc
+23c23
+< includedir=${prefix}/include
+---
+> includedir=${prefix}/include/thrift
+29c29
+< Cflags: -I${includedir}
+---
+> Cflags: -I${includedir} -std=c++11
+```
+
+Install R packages from source:
+
+```
+Sys.setenv("HADOOP_CMD" = "/home/hduser/hadoop/bin/hadoop")
+Sys.setenv("HADOOP_STREAMING" = "/home/hduser/hadoop/share/hadoop/tools/lib/hadoop-streaming-2.7.2.jar")
 ```
