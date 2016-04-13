@@ -81,4 +81,36 @@ Install R packages from source:
 ```
 Sys.setenv("HADOOP_CMD" = "/home/hduser/hadoop/bin/hadoop")
 Sys.setenv("HADOOP_STREAMING" = "/home/hduser/hadoop/share/hadoop/tools/lib/hadoop-streaming-2.7.2.jar")
+
+install.packages("rhbase_1.2.1.tar.gz?raw=true", repos = NULL)
+```
+
+## Throubleshooting (R)-Hadoop
+
+R code for testing (https://github.com/RevolutionAnalytics/rmr2/blob/master/docs/tutorial.md):
+
+```
+library(rmr2)
+small.ints = to.dfs(1:1000)
+```
+
+### Error: Permission denied
+
+Error message: "org.apache.hadoop.security.AccessControlException: Permission denied: user= access=WRITE, inode="/tmp/"
+
+Solution: http://stackoverflow.com/a/29981409/551589
+
+Step 1 : stop hadoop and clean temp files from hduser
+
+```
+sudo rm -r /app/hadoop/tmp
+sudo mkdir -p /app/hadoop/tmp
+sudo chown hduser:hadoop /app/hadoop/tmp
+sudo chmod 750 /app/hadoop/tmp
+```
+
+Step 2: format namenode
+
+```
+hdfs namenode -format
 ```
