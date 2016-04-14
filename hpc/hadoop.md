@@ -115,3 +115,14 @@ Step 2: format namenode
 ```
 hdfs namenode -format
 ```
+
+If the error still persists, try a temporal solution http://stackoverflow.com/a/11603165/551589
+
+Edit the hdfs-site.xml file:
+
+```
+<property>
+  <name>dfs.permissions</name>
+  <value>false</value>
+</property>
+```
