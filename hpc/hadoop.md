@@ -56,8 +56,20 @@ wget https://github.com/RevolutionAnalytics/rmr2/releases/download/3.3.1/rmr2_3.
 
 Configure thrift (http://stackoverflow.com/a/36427232/551589):
 
+Configure shared libraries:
+
+```
+/sbin/ldconfig -p | grep thrift
+sudo ldconfig /usr/local/lib/libthrift-0.9.3.so 
+```
+
+
+Configure headers:
+
 ```
 cd /usr/local/lib/pkgconfig
+cp thrift.pc thrift.pc.bck
+
 sudo perl -pi -e 's{(^includedir=.*/include$)}{$1/thrift}' thrift.pc
 sudo perl -pi -e 's{(^Cflags:.*)}{$1 -std=c++11}' thrift.pc
 ```
