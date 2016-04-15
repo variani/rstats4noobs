@@ -109,7 +109,7 @@ out <- from.dfs(mapreduce(input = small.ints, map = function(k, v) cbind(v, v^2)
 
 ### Error: Permission denied
 
-Error message: "org.apache.hadoop.security.AccessControlException: Permission denied: user= access=WRITE, inode="/tmp/"
+Error message: "org.apache.hadoop.security.AccessControlException: Permission denied: user= access=WRITE, inode="/tmp/", as a result of R command `small.ints = to.dfs(1:1000)`.
 
 Solution: http://stackoverflow.com/a/29981409/551589
 
@@ -137,4 +137,23 @@ Edit the hdfs-site.xml file:
   <name>dfs.permissions</name>
   <value>false</value>
 </property>
+```
+
+
+### Error: Permission denied #2
+
+Error message: "ERROR streaming.StreamJob: Error Launching job : Permission denied", as a result of R command `mapreduce(input = small.ints, map = function(k, v) cbind(v, v^2))`.
+
+Solution: the same as for the previous error case
+
+Testing from terminal:
+
+```
+touch /home/hduser/tmp/test.txt
+```
+
+A temporal solution:
+
+```
+sudo chmod -R 777 /home/hduser/tmp
 ```
