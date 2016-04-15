@@ -1,0 +1,179 @@
+---
+title: "Tutorial on rmr2"
+author: "Andrey Ziyatdinov"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: united
+    toc: true
+    keep_md: true
+---
+
+```{r options, echo = F}
+opts_chunk$set(fig.path = "figures/", comment = NA, results = 'markup', tidy = F, message = F, warning = F, echo = T)
+```
+
+```{r inc, echo = F, cache = FALSE}
+library(plyr)
+library(ggplot2)
+library(gridExtra)
+
+library(pander)
+```
+
+```{r settings, echo = F, cache = FALSE}
+theme_set(theme_light())
+panderOptions('table.split.table', Inf)
+panderOptions('knitr.auto.asis', FALSE)
+```
+
+# About
+
+References
+
+* Example 1 Squares of integers & Example 2 Groups: [basic-examples.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/basic-examples.R)
+* Example 3 Words Count: [wordcount.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/wordcount.R)
+
+# Preparation
+
+Include the R-Hadoop libraries:
+
+```{r inc_rhadoop, cache = FALSE}
+library(rhdfs)
+library(rhbase)
+library(rmr2)
+```
+
+Set up Hadoop environment variables:
+
+```{r env_hadoop}
+Sys.setenv("HADOOP_CMD" = "/home/hduser/hadoop/bin/hadoop")
+Sys.setenv("HADOOP_STREAMING" = "/home/hduser/hadoop/share/hadoop/tools/lib/hadoop-streaming-2.7.2.jar")
+```
+
+# Map-reduce Examples
+
+## Map-reduce Example 1: Squares of integers
+
+```{r ex1, cache = TRUE}
+small.ints <- to.dfs(1:1000)
+
+ret1 <- mapreduce(
+  input = small.ints, 
+  map = function(k, v) cbind(v, v^2))
+
+out1 <- from.dfs(ret1)
+```
+
+Plot results:
+
+```{r plot1, cache = TRUE}
+df <- as.data.frame(out1$val)
+names(df) <- c("v", "v2")
+
+ggplot(df, aes(v, v2)) + geom_point()
+```
+
+## Map-reduce Example 2: Groups
+
+Data in R:
+
+```{r gr, cache = T}
+set.seed(1)
+groups <- rbinom(32, n = 50, prob = 0.4)
+```
+
+R code with `tapply` equivalent to map-reduce operation:
+
+```{r tapply, cache = T}
+tapply(groups, groups, length)
+```
+
+Send data to HDFS:
+
+### Reduce is skipped
+
+```{r groups_dfs, cache = TRUE}
+groups_dfs <- to.dfs(groups)
+```
+
+```{r ex2_1, cache = TRUE}
+ret2_1 <- mapreduce(
+  input = groups_dfs, 
+  map = function(k, v) keyval(v, 1))
+
+out2_1 <- from.dfs(ret2_1)
+```
+
+Table of results (first 5 rows):
+
+```{r tab2_1, echo = FALSE, results = 'asis'}
+pander(head(as.data.frame(out2_1), 5), style = 'rmarkdown')
+```
+
+### Reduce is on
+
+```{r ex2, cache = TRUE}
+ret2_2 <- mapreduce(
+  input = groups_dfs, 
+  map = function(k, v) keyval(v, 1), 
+  reduce = function(k, vv) keyval(k, length(vv)))
+
+out2_2 <- from.dfs(ret2_2)
+```
+
+Table of results:
+
+```{r tab2_2, echo = FALSE, results = 'asis'}
+pander(as.data.frame(out2_2), style = 'rmarkdown')
+```
+
+## Map-reduce Example 3: Word counter
+
+Word-count functions:
+
+```{r fun3}
+wc_map <- function(k, lines, pattern = " ") 
+{
+  keyval(
+    unlist(strsplit(lines, pattern)), 
+    1)
+}
+
+wc_reduce <- function(word, counts) 
+{
+  keyval(
+    word, 
+    sum(counts))
+}
+```
+
+```{r text3, cache = T}
+text <- capture.output(license())
+text_dfs <- to.dfs(text)
+```
+
+```{r show_text}
+text
+```
+
+```{r ex3, cache = T}
+ret3 <- mapreduce(
+  input = text_dfs, 
+  map = wc_map, reduce = wc_reduce, combine = TRUE)
+  
+out3 <- from.dfs(ret3)  
+```
+
+Top 5 words:
+
+```{r tab5, echo = FALSE, results = 'asis'}
+df <- as.data.frame(out3)
+
+ord <- order(df$val, decreasing = TRUE)
+df <- df[ord, ]
+
+rownames(df) <- NULL
+
+pander(head(df, 5), style = 'rmarkdown')
+```
