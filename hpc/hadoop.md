@@ -7,6 +7,7 @@ Introductory material
 Tutorials
 
 * https://rdatamining.wordpress.com/2013/08/20/step-by-step-to-build-my-first-r-hadoop-system/
+* http://www.slideshare.net/ChiuYW/big-data-analysis-with-rhadoop
 
 ## Install hadoop
 
