@@ -1,5 +1,9 @@
 ## R & hadoop
 
+Introductory material
+
+* http://www-01.ibm.com/software/data/infosphere/hadoop/hbase/
+
 Tutorials
 
 * https://rdatamining.wordpress.com/2013/08/20/step-by-step-to-build-my-first-r-hadoop-system/
