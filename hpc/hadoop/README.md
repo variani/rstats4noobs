@@ -121,10 +121,10 @@ Solution: http://stackoverflow.com/a/29981409/551589
 Step 1 : stop hadoop and clean temp files from hduser
 
 ```
-sudo rm -r /app/hadoop/tmp
-sudo mkdir -p /app/hadoop/tmp
-sudo chown hduser:hadoop /app/hadoop/tmp
-sudo chmod 750 /app/hadoop/tmp
+sudo rm -r /home/hduser/tmp
+sudo mkdir -p /home/hduser/tmp
+sudo chown hduser:hadoop /home/hduser/tmp
+sudo chmod 750 /home/hduser/tmp
 ```
 
 Step 2: format namenode
