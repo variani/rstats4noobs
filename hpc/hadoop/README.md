@@ -162,3 +162,15 @@ A temporal solution:
 ```
 sudo chmod -R 777 /home/hduser/tmp
 ```
+
+### java.lang.OutOfMemoryError: Java heap space
+
+Solution: http://stackoverflow.com/a/16790077
+
+Uncomment the line `export HADOOP_HEAPSIZE=` and set up the heap size in Mb.
+
+```
+hduser@tau:~$ cat /home/hduser/hadoop/etc/hadoop/hadoop-env.sh | grep HEAP
+export HADOOP_HEAPSIZE=1024
+#export HADOOP_NAMENODE_INIT_HEAPSIZE=""
+```
