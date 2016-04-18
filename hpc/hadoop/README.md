@@ -18,6 +18,7 @@ Tutorials
 Tutorials
 
 * http://www.bogotobogo.com/Linux/hadoop2_running_on_ubuntu_single_node_cluster.php
+      * Similar tutorial: http://www.bogotobogo.com/Hadoop/BigData_hadoop_Install_on_ubuntu_single_node_cluster.php
 * http://www.michael-noll.com/tutorials/running-hadoop-on-ubuntu-linux-single-node-cluster/
 
 Issues
