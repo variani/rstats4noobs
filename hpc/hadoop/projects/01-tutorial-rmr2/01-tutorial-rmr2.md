@@ -14,8 +14,19 @@ References
 
 * Example 1 Squares of integers & Example 2 Groups: [basic-examples.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/basic-examples.R)
 * Example 3 Words Count: [wordcount.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/wordcount.R)
+* Example 5 OLS
+    * [linear-least-squares.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/linear-least-squares.R)
+    * The same code with more details at [144.pdf](http://cks.univnt.ro/uploads/cks_2015_articles/index.php?dir=12_IT_in_social_sciences%2F&download=CKS+2015_IT_in_social_sciences_art.144.pdf)
 
 # Preparation
+
+Set up Hadoop environment variables:
+
+
+```r
+Sys.setenv("HADOOP_CMD" = "/home/hduser/hadoop/bin/hadoop")
+Sys.setenv("HADOOP_STREAMING" = "/home/hduser/hadoop/share/hadoop/tools/lib/hadoop-streaming-2.7.2.jar")
+```
 
 Include the R-Hadoop libraries:
 
@@ -24,14 +35,6 @@ Include the R-Hadoop libraries:
 library(rhdfs)
 library(rhbase)
 library(rmr2)
-```
-
-Set up Hadoop environment variables:
-
-
-```r
-Sys.setenv("HADOOP_CMD" = "/home/hduser/hadoop/bin/hadoop")
-Sys.setenv("HADOOP_STREAMING" = "/home/hduser/hadoop/share/hadoop/tools/lib/hadoop-streaming-2.7.2.jar")
 ```
 
 # Map-reduce Examples
@@ -215,3 +218,205 @@ Top 5 words:
 |  be   |   5   |
 |  can  |   5   |
 |  by   |   4   |
+
+## Map-reduce Example 5: OLS solution for linear model
+
+### Learn `Reduce` function
+
+The `+` operator doesn't work for more than 2 matrices.
+
+
+```r
+ret <- try(do.call("+", llply(1:3, function(i) matrix(i, 2, 2))))
+cat(ret)
+```
+
+```
+Error in `+`(structure(c(1L, 1L, 1L, 1L), .Dim = c(2L, 2L)), structure(c(2L,  : 
+  operator needs one or two arguments
+```
+
+
+```r
+# See `?Reduce` for more info.
+add <- function(x) Reduce("+", x)
+
+# input list of matrices
+llply(1:2, function(i) matrix(i, 2, 2))
+```
+
+```
+[[1]]
+     [,1] [,2]
+[1,]    1    1
+[2,]    1    1
+
+[[2]]
+     [,1] [,2]
+[1,]    2    2
+[2,]    2    2
+```
+
+```r
+# pass it to `add` function
+add(llply(1:2, function(i) matrix(i, 2, 2)))
+```
+
+```
+     [,1] [,2]
+[1,]    3    3
+[2,]    3    3
+```
+
+### Learn parallel computation of t(X) * X
+
+
+```r
+# 10 observations, 4 variables
+X <- matrix(1:10, 10, 4)
+X
+```
+
+```
+      [,1] [,2] [,3] [,4]
+ [1,]    1    1    1    1
+ [2,]    2    2    2    2
+ [3,]    3    3    3    3
+ [4,]    4    4    4    4
+ [5,]    5    5    5    5
+ [6,]    6    6    6    6
+ [7,]    7    7    7    7
+ [8,]    8    8    8    8
+ [9,]    9    9    9    9
+[10,]   10   10   10   10
+```
+
+```r
+# split `X` matrix into batches by rows
+X1 <- X[1:4, ]
+X2 <- X[5:10, ]
+
+# see results of computation per batch
+list(t(X1) %*% X1, t(X2) %*% X2)
+```
+
+```
+[[1]]
+     [,1] [,2] [,3] [,4]
+[1,]   30   30   30   30
+[2,]   30   30   30   30
+[3,]   30   30   30   30
+[4,]   30   30   30   30
+
+[[2]]
+     [,1] [,2] [,3] [,4]
+[1,]  355  355  355  355
+[2,]  355  355  355  355
+[3,]  355  355  355  355
+[4,]  355  355  355  355
+```
+
+```r
+# sum up the results per batch
+add(list(t(X1) %*% X1, t(X2) %*% X2))
+```
+
+```
+     [,1] [,2] [,3] [,4]
+[1,]  385  385  385  385
+[2,]  385  385  385  385
+[3,]  385  385  385  385
+[4,]  385  385  385  385
+```
+
+```r
+# compare with `unparallel` code
+t(X) %*% X
+```
+
+```
+     [,1] [,2] [,3] [,4]
+[1,]  385  385  385  385
+[2,]  385  385  385  385
+[3,]  385  385  385  385
+[4,]  385  385  385  385
+```
+
+### Simulate data
+
+
+```r
+nr <- 2e5
+nc <- 10
+set.seed(1)
+X <- matrix(rnorm(nr * nc), ncol = nc)
+
+X_dfs <- to.dfs(cbind(1:nrow(X), X))
+y <- as.matrix(rnorm(nr)) 
+```
+
+### Reducer is missing
+
+
+```r
+ret5_1 <- mapreduce(
+  input = X_dfs, 
+  map = function(., Xi) {
+    list(dim(Xi))
+  }) 
+ 
+out5_1 <- from.dfs(ret5_1)
+```
+       
+
+```r
+str(out5_1)
+```
+
+```
+List of 2
+ $ key: NULL
+ $ val:List of 2
+  ..$ : int [1:2] 102272 11
+  ..$ : int [1:2] 97728 11
+```
+
+### Reducer for tXX
+
+
+```r
+ols_reduce <- function(., M) keyval(1, list(Reduce('+', M)))
+```
+
+
+```r
+ret5_2 <- mapreduce(input = X_dfs,
+  map = function(., Xi) {
+    Xi <- Xi[,-1]
+    keyval(1, list(t(Xi) %*% Xi))
+  }, 
+  reduce = ols_reduce,
+  combine = TRUE)
+
+out5_2 <- values(from.dfs(ret5_2))[[1]]
+```
+
+
+```r
+dim(out5_2)
+```
+
+```
+[1] 10 10
+```
+
+```r
+out5_2[1:3, 1:3]
+```
+
+```
+            [,1]        [,2]        [,3]
+[1,] 200946.7655    625.9976    501.3744
+[2,]    625.9976 199302.1147    868.7656
+[3,]    501.3744    868.7656 199826.5598
+```
