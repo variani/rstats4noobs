@@ -13,10 +13,13 @@ Andrey Ziyatdinov
 References
 
 * Example 1 Squares of integers & Example 2 Groups: [basic-examples.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/basic-examples.R)
-* Example 3 Words Count: [wordcount.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/wordcount.R)
-* Example 5 OLS
+* Example 2 Words Count: [wordcount.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/wordcount.R)
+* Example 3 OLS
     * [linear-least-squares.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/linear-least-squares.R)
     * The same code with more details at [144.pdf](http://cks.univnt.ro/uploads/cks_2015_articles/index.php?dir=12_IT_in_social_sciences%2F&download=CKS+2015_IT_in_social_sciences_art.144.pdf)
+* Example 4 K-means clustering
+    * R code [kmeans.R](https://github.com/RevolutionAnalytics/rmr2/blob/master/pkg/tests/kmeans.R)
+
 
 # Preparation
 
@@ -219,7 +222,7 @@ Top 5 words:
 |  can  |   5   |
 |  by   |   4   |
 
-## Map-reduce Example 5: OLS solution for linear model
+## Map-reduce Example 4: OLS solution for linear model
 
 ### Learn `Reduce` function
 
@@ -352,7 +355,7 @@ set.seed(1)
 X <- matrix(rnorm(nr * nc), ncol = nc)
 
 X_dfs <- to.dfs(cbind(1:nrow(X), X))
-y <- as.matrix(rnorm(nr)) 
+y <- as.matrix(rnorm(nr))
 ```
 
 ### Reducer is missing
@@ -377,8 +380,8 @@ str(out5_1)
 List of 2
  $ key: NULL
  $ val:List of 2
-  ..$ : int [1:2] 102272 11
-  ..$ : int [1:2] 97728 11
+  ..$ : int [1:2] 102271 11
+  ..$ : int [1:2] 97729 11
 ```
 
 ### Reducer for tXX
@@ -420,3 +423,200 @@ out5_2[1:3, 1:3]
 [2,]    625.9976 199302.1147    868.7656
 [3,]    501.3744    868.7656 199826.5598
 ```
+
+### A complete OLS example
+
+Steps:
+
+* simulate data `X` and `y`
+* put a big matrix `X` onto HDFS
+* compute `tXX` and `tXy` on hadoop
+* solve OLS in R
+
+
+
+```r
+# simulate data
+nr <- 2e3
+nc <- 10
+set.seed(1)
+X <- matrix(rnorm(nr * nc), ncol = nc)
+
+X_dfs <- to.dfs(cbind(1:nrow(X), X))
+y <- as.matrix(rnorm(nr)) 
+
+ols_reduce <- function(., M) keyval(1, list(Reduce('+', M)))
+
+tXX <- values(from.dfs(mapreduce(input = X_dfs,
+  map = function(., Xi) {
+    Xi <- Xi[,-1]
+    keyval(1, list(t(Xi) %*% Xi))
+  }, 
+  reduce = ols_reduce,
+  combine = TRUE)))[[1]]
+  
+tXy <- values(from.dfs(mapreduce(input = X_dfs,
+  map = function(., Xi) {
+    yi <- y[Xi[,1], , drop = FALSE]
+    Xi <- Xi[,-1]
+    keyval(1, list(t(Xi) %*% yi))
+  }, 
+  reduce = ols_reduce,
+  combine = TRUE)))[[1]]  
+```
+
+
+```r
+beta_hadoop <- solve(tXX, tXy)
+```
+
+
+```r
+beta_R <- solve(t(X) %*% X, t(X) %*% y)
+```
+
+Two vectors are identical:
+
+
+```r
+sqrt(sum((beta_hadoop - beta_R)^2))
+```
+
+```
+[1] 0
+```
+
+
+|   beta_R   |  beta_hadoop  |
+|:----------:|:-------------:|
+|  0.00706   |    0.00706    |
+|  -0.01963  |   -0.01963    |
+|  0.04114   |    0.04114    |
+|  0.01835   |    0.01835    |
+|  -0.01788  |   -0.01788    |
+| -0.009436  |   -0.009436   |
+| -9.018e-05 |  -9.018e-05   |
+|  -0.02747  |   -0.02747    |
+|  -0.0119   |    -0.0119    |
+|  0.004317  |   0.004317    |
+
+## Map-reduce Example 5 K-means Clustering
+
+### Simulate data in R
+
+
+```r
+set.seed(1)
+P <- do.call(rbind, rep(list(matrix(rnorm(10, sd = 10), ncol = 2)), 20)) + 
+  matrix(rnorm(200), ncol = 2)
+```
+
+
+```r
+ggplot(as.data.frame(P), aes(V1, V2)) + geom_point()
+```
+
+![](figures/plot_simdat-1.png) 
+
+### Distance function
+
+
+```r
+kmeans_dist <- function(C, P) 
+{
+  apply(C, 1, function(x) rowSums((P - x)^2))
+}
+```
+
+### Map-Reduce functions
+
+
+```r
+kmeans_mapper <- function(., P) 
+{
+  nearest <- {
+    if(is.null(C)) {
+      sample(1:num.clusters, nrow(P), replace = TRUE)
+    } else {
+      D <- kmeans_dist(C, P)
+      max.col(-D)
+    }
+  }
+  
+  if(!(combine || in.memory.combine)) {
+    keyval(nearest, P)
+  } else {
+    keyval(nearest, cbind(1, P))
+  }
+}
+
+kmeans_reducer <- {
+  if(!(combine || in.memory.combine)) {
+    function(., P) t(as.matrix(apply(P, 2, mean)))
+  } else {
+    function(k, P) keyval(k, t(as.matrix(apply(P, 2, sum))))
+  }
+}
+```
+
+### K-means clustering 1: 12 clusters
+
+
+```r
+num.clusters <- 12
+num.iter <- 5
+combine <- FALSE
+in.memory.combine <- FALSE
+
+P_dfs <- to.dfs(P)
+      
+C <- NULL
+for(i in 1:num.iter ) {
+  out <- mapreduce(input = P_dfs, map = kmeans_mapper, reduce = kmeans_reducer)
+  C <- values(from.dfs(out))
+  
+  if(combine || in.memory.combine) {
+    C <- C[, -1]/C[, 1]
+  }
+}  
+
+C1 <- C
+```
+
+
+```r
+ggplot(as.data.frame(P), aes(V1, V2)) + geom_point() + geom_point(aes(V1, V2), data = as.data.frame(C1), color = "red")
+```
+
+![](figures/plot_kmeans1-1.png) 
+
+### K-means clustering 2: 5 clusters
+
+
+```r
+num.clusters <- 5
+num.iter <- 5
+combine <- FALSE
+in.memory.combine <- FALSE
+
+P_dfs <- to.dfs(P)
+      
+C <- NULL
+for(i in 1:num.iter ) {
+  out <- mapreduce(input = P_dfs, map = kmeans_mapper, reduce = kmeans_reducer)
+  C <- values(from.dfs(out))
+  
+  if(combine || in.memory.combine) {
+    C <- C[, -1]/C[, 1]
+  }
+}  
+
+C2 <- C
+```
+
+
+```r
+ggplot(as.data.frame(P), aes(V1, V2)) + geom_point() + geom_point(aes(V1, V2), data = as.data.frame(C2), color = "red")
+```
+
+![](figures/plot_kmeans2-1.png) 
