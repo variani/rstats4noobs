@@ -9,6 +9,18 @@ Tutorials
 * https://rdatamining.wordpress.com/2013/08/20/step-by-step-to-build-my-first-r-hadoop-system/
 * http://www.slideshare.net/ChiuYW/big-data-analysis-with-rhadoop
 
+Talks
+
+* https://www.crick.ac.uk/media/4366/Cloud-based_Analytics_and_Map_Reduce.pdf
+* https://www.bioconductor.org/help/course-materials/2013/BioC2013/Urbanek.pdf
+
+Hadoop/HPC applied to genetics
+
+* http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3040523/
+* https://github.com/ibm-bioinformatics/BlueSNP
+* https://www.biostars.org/p/69/#213
+* https://github.com/genepi/cloudflow
+
 ## Install hadoop
 
 * Thread http://askubuntu.com/questions/144433/how-to-install-hadoop
