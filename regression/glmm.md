@@ -5,3 +5,4 @@
 ## Count data
 
 * http://www.r-bloggers.com/count-data-to-log-or-not-to-log/
+* http://www.r-bloggers.com/poisson-regression-fitted-by-glm-maximum-likelihood-and-mcmc/
