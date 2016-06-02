@@ -2,6 +2,10 @@
 
 * R+AWS http://ipub.com/aws/
 
+Talks
+
+* [High performance computing in R](https://rpubs.com/wbnicholson/32755) by Will Nicholson
+
 ## Software 
 
 H2O
