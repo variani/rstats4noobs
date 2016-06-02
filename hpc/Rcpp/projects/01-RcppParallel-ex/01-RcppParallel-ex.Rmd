@@ -1,4 +1,4 @@
-s---
+---
 title: "RcppParallel Examples"
 author: "Andrey Ziyatdinov"
 date: "`r Sys.Date()`"
