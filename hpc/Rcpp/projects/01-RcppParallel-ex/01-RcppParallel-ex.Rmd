@@ -27,6 +27,13 @@ panderOptions('table.split.table', Inf)
 panderOptions('knitr.auto.asis', FALSE)
 ```
 
+# About
+
+
+## References
+
+* Plot dendograms: [ggdendro vignette](https://cran.r-project.org/web/packages/ggdendro/vignettes/ggdendro.html)
+
 # Include
 
 ```{r include, cache = F}
@@ -35,6 +42,8 @@ library(RcppParallel)
 library(RcppArmadillo)
 
 library(microbenchmark)
+
+library(ggdendro)
 ```
 
 # Inner Product
@@ -114,7 +123,10 @@ sourceCpp(code = '
 )
 ```
 
+### Benchmarking
+
 ```{r ip_bench}
+set.seed(1)
 x <- runif(1e5)
 y <- runif(1e5)
 
@@ -125,5 +137,386 @@ out <- microbenchmark(
   times = 10)
 
 autoplot(out)  
+```
+
+### Vectors of different size
+
+```{r diff_size}
+parallelInnerProduct(1:5, 1:6)
+parallelInnerProduct(1:5, 1:4)
+```
+
+In serial version:
+
+```{r diff_size2}
+innerProduct(1:5, 1:4)
+```
+
+# Distance matrix calculation
+
+In the original [post](http://gallery.rcpp.org/articles/parallel-distance-matrix/) 
+the [Jensen-Shannon distance](http://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence) (JSD) is used.
+Here, we will simply employ the [Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance).
+
+## R version
+
+```{r edistance}
+edistance <- function(mat) {
+  dist <- matrix(0, nrow(mat), nrow(mat))
+  
+  for(i in seq(1, nrow(mat) - 1)) {
+    for(j in seq(i + 1, nrow(mat))) {
+      sum2 <- 0 # sum of squares
+      for(k in seq(1, ncol(mat))) {
+        delta <- (mat[i, k] - mat[j, k])
+        sum2 <- sum2 + delta * delta
+      }
+      
+      #dist[i, j] <- sqrt(sum2)
+      dist[j, i] <- sqrt(sum2) # lower triangle
+    }
+  }
+
+  return(dist)
+}
+```
+
+### Basic tests
+
+All rows are equal:
+
+```{r rows_eq}
+edistance(matrix(2, 2, 2))
+```
+
+```{r rows}
+edistance(matrix(1:4, 2, 2))
+```
+
+Compare with R base `dist` function (the Eucclidean distance is the default measure):
+
+```{r comp_dist}
+dist(matrix(1:9, 3, 3))
+edistance(matrix(1:9, 3, 3))
+```
+
+### Clustering of iris samples
+
+A quick scatter plot on 2 out of 4 variables:
+
+```{r scatter_iris, fig.width = 12}
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Species)) + geom_point() +
+  scale_color_brewer(type = "qual", palette = 2)
+```
+
+That gives us an idea that samples of `setosa` class are well separated from the others.
+
+```{r clust_iris, fig.width = 12}
+dat <- iris
+
+edist <- edistance(dat[, -5])
+
+dist <- as.dist(edist)
+hc <- hclust(dist)
+
+ord <- hc$order
+lf <- data.frame(index = 1:length(ord), order = ord, class = iris[ord, 5])
+
+p <- ggdendrogram(hc, labels = F) + 
+  geom_point(data = lf, aes(x = index, y = 0, color = class)) +
+  scale_colour_brewer(type = "qual", palette = 2)
+
+p  
+```
+
+## Generic function
+
+
+```{r edistance_cpp}
+srcGeneric <- '
+  // generic function for Euclidean distance
+  template <typename InputIterator1, typename InputIterator2>
+  inline double edistance(InputIterator1 begin1, InputIterator1 end1, 
+    InputIterator2 begin2) 
+  {
+  
+    // value to return
+    double val = 0;
+   
+    // set iterators to beginning of ranges
+    InputIterator1 it1 = begin1;
+    InputIterator2 it2 = begin2;
+   
+    // for each input item
+    while (it1 != end1) {
+      
+      // take the value and increment the iterator
+      double d1 = *it1++;
+      double d2 = *it2++;
+      
+      double delta = d2 - d1;
+
+      val += delta * delta;
+   }
+   val = std::sqrt(val);
+
+   return val;  
+}'
+```
+
+## Rcpp serial version
+
+```{r edistance_rcpp, dependson = -1}
+srcSerial <- paste(
+  '
+  #include <Rcpp.h>
+  using namespace Rcpp;
+  ',
+  srcGeneric,
+  '
+  // [[Rcpp::export]]
+  NumericMatrix edistance_rcpp(NumericMatrix mat) 
+  {
+    // allocate the matrix we will return
+    NumericMatrix rmat(mat.nrow(), mat.nrow());
+   
+    for(int i = 0; i < rmat.nrow(); i++) {
+      for (int j = 0; j < i; j++) {
+      
+        // rows we will operate on
+        NumericMatrix::Row row1 = mat.row(i);
+        NumericMatrix::Row row2 = mat.row(j);
+         
+        // calculate distances
+        double d = edistance(row1.begin(), row1.end(), row2.begin());
+        
+        // write to output matrix
+        rmat(i,j) = d;
+      }
+    }
+    return rmat;
+  }
+  '
+)
+
+sourceCpp(code = srcSerial)
+```
+
+## Rcpp parallel version
+
+```{r edistance_rcpp_par}
+srcParallel <- paste(
+  '
+  #include <Rcpp.h>
+  using namespace Rcpp;
+  
+  // [[Rcpp::depends(RcppParallel)]]
+  #include <RcppParallel.h>
+  using namespace RcppParallel;
+
+  ',
+  srcGeneric,
+  '
+  struct EDistance : public Worker 
+  {
+    // input matrix to read from
+    const RMatrix<double> mat;
+   
+    // output matrix to write to
+    RMatrix<double> rmat;
+   
+    // initialize from Rcpp input and output matrixes (the RMatrix class
+    // can be automatically converted to from the Rcpp matrix type)
+    EDistance(const NumericMatrix mat, NumericMatrix rmat)
+      : mat(mat), rmat(rmat) {}
+    
+    // function call operator that work for the specified range (begin/end)
+    void operator()(std::size_t begin, std::size_t end) 
+    {
+      for (std::size_t i = begin; i < end; i++) {
+        for (std::size_t j = 0; j < i; j++) {
+          // rows we will operate on
+          RMatrix<double>::Row row1 = mat.row(i);
+          RMatrix<double>::Row row2 = mat.row(j);
+            
+          // calculate distance
+          double d = edistance(row1.begin(), row1.end(), row2.begin());
+          
+          // write to output matrix
+          rmat(i,j) = d;
+        }
+      }
+    }
+  };
+  '
+  ,
+  '
+  // [[Rcpp::export]]
+  NumericMatrix edistance_rcpp_parallel(NumericMatrix mat) 
+  {
+    // allocate the matrix we will return
+    NumericMatrix rmat(mat.nrow(), mat.nrow());
+
+    // create the worker
+    EDistance eDistance(mat, rmat);
+     
+    // call it with parallelFor
+    parallelFor(0, mat.nrow(), eDistance);
+
+    return rmat;
+  }
+  '
+)
+
+sourceCpp(code = srcParallel)
+```
+
+## Benchmarks
+
+```{r bench_ed}
+set.seed(1)
+n <- 100
+k <- 10
+mat <- matrix(runif(n * k), ncol = k)
+
+
+out <- microbenchmark(
+  edistance(mat),
+  dist(mat, method = "euclidean"),
+  edistance_rcpp(mat),
+  edistance_rcpp_parallel(mat),
+  times = 10)
+
+autoplot(out) 
+```
+
+### Excluding slow R code
+
+
+```{r bench_ed2}
+set.seed(1)
+n <- 1000
+k <- 10
+mat <- matrix(runif(n * k), ncol = k)
+
+
+out <- microbenchmark(
+  dist(mat, method = "euclidean"),
+  edistance_rcpp(mat),
+  edistance_rcpp_parallel(mat),  
+  times = 10)
+
+autoplot(out) 
+```
+
+# Product of matrix and vector
+
+## Rcpp serial version
+
+```{r prod_mat_vec_Rcpp}
+sourceCpp(code = '
+  #include <Rcpp.h>
+  using namespace Rcpp;
+
+  // [[Rcpp::export]]
+  NumericVector prod_mat_vec_Rcpp(NumericMatrix mat, NumericVector vec) 
+  {
+    // allocate the matrix we will return
+    NumericVector rvec(mat.nrow());
+   
+    for(int i = 0; i < mat.nrow(); i++) {
+      // rows we will operate on
+      NumericMatrix::Row rowi = mat.row(i);
+         
+      // calculate inneer product
+      double prod = std::inner_product(rowi.begin(), rowi.end(), vec.begin(), 0.0);
+        
+      // write to output matrix
+      rvec(i) = prod;
+    }
+
+    return rvec;
+  }
+  '
+)
+```
+
+## Rcpp parallel version
+
+```{r prod_mat_vec_Rcpp_par}
+sourceCpp(code = '
+  #include <Rcpp.h>
+  using namespace Rcpp;
+
+  // [[Rcpp::depends(RcppParallel)]]
+  #include <RcppParallel.h>
+  using namespace RcppParallel;
+
+  struct ProductMatVec : public Worker 
+  {
+    // input to read from
+    const RMatrix<double> mat;
+    const RVector<double> vec;
+   
+    // output to write to
+    RVector<double> rvec;
+   
+    // initialize from Rcpp input and output matrixes (the RMatrix class
+    // can be automatically converted to from the Rcpp matrix type)
+    ProductMatVec(const NumericMatrix mat, const NumericVector vec, NumericVector rvec)
+      : mat(mat), vec(vec), rvec(rvec) {}
+    
+    // function call operator that work for the specified range (begin/end)
+    void operator()(std::size_t begin, std::size_t end) 
+    {
+      for (std::size_t i = begin; i < end; i++) {
+        // rows we will operate on
+        RMatrix<double>::Row rowi = mat.row(i);
+        
+        // calculate inneer product
+        double prod = std::inner_product(rowi.begin(), rowi.end(), vec.begin(), 0.0);
+        
+        // write to output matrix
+        rvec[i] = prod;
+      }
+    }
+  };
+
+  // [[Rcpp::export]]
+  NumericVector prod_mat_vec_Rcpp_parallel(NumericMatrix mat, NumericVector vec) 
+  {
+    // allocate the matrix we will return
+    NumericVector rvec(mat.nrow());
+    
+    // create the worker
+    ProductMatVec productMatVec(mat, vec, rvec);
+     
+    // call it with parallelFor
+    parallelFor(0, mat.nrow(), productMatVec);
+
+    return rvec;
+  }
+  '
+)
+```
+
+
+## Benchmarks
+
+```{r bench_prod_mat_vec}
+set.seed(1)
+n <- 1000
+k <- 100
+mat <- matrix(runif(n * k), ncol = k)
+vec <- runif(k) 
+
+out <- microbenchmark(
+  mat %*% vec,
+  tcrossprod(mat, t(vec)),
+  prod_mat_vec_Rcpp(mat, vec),
+  prod_mat_vec_Rcpp_parallel(mat, vec),
+  times = 20)
+
+autoplot(out)
 ```
 
