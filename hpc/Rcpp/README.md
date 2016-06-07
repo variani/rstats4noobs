@@ -1,7 +1,8 @@
 
 ## RcppArmadillo
 
-Documentation: http://arma.sourceforge.net/docs.html
+* The official documentation: http://arma.sourceforge.net/docs.html
+* Cheatsheet https://github.com/petewerner/misc/wiki/RcppArmadillo-cheatsheet
 
 ## RcppParallel
 
