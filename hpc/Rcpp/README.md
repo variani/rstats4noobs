@@ -17,3 +17,8 @@ RcppArmadillo examples
 
 * http://stackoverflow.com/questions/26234055/cohabitation-of-rcpparmadillo-and-rcppparallel
       * `arma::vec` is to be a reference member of the class
+
+## crossprod
+
+* [Faster R: Things to not forget](http://pj.freefaculty.org/blog/?p=122)
+      * [Rnews_2004-1.pdf](https://cran.r-project.org/doc/Rnews/Rnews_2004-1.pdf)
