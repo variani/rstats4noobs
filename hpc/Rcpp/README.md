@@ -1,4 +1,8 @@
 
+## RcppArmadillo
+
+Documentation: http://arma.sourceforge.net/docs.html
+
 ## RcppParallel
 
 Main page: http://rcppcore.github.io/RcppParallel/
