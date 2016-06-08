@@ -177,6 +177,7 @@ arma::vec prodArmaByRef(const arma::mat & mat, const arma::vec & vec)
 ```{r prod_bench_n}
 nseq <- seq(1000, 2000, length = 10)
 df <- ldply(nseq, function(n) {
+  n <- ceiling(n)
   v <- rexp(n)
   M <- matrix(rexp(n*n), nrow = n, ncol = n)
   
