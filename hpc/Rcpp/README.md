@@ -1,3 +1,12 @@
+## Convert data
+
+### From R to C++
+
+* http://yuluer.com/page/dgghjeff-is-it-a-good-ideal-to-use-loops-for-rcpps-numericmatrix-in-c.shtml: `std::vector<double> v = Rcpp::as<std::vector<double>>(x);`
+
+### From C++ to R
+
+* http://stackoverflow.com/a/22381355/551589
 
 ## RcppArmadillo
 
