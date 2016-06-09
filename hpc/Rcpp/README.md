@@ -1,3 +1,7 @@
+## Rcpp
+
+* Quick reference https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-quickref.pdf
+
 ## Convert data
 
 ### From R to C++
