@@ -2,6 +2,11 @@
 
 * Quick reference https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-quickref.pdf
 
+### Issues
+
+* [Is that possible to use both RcppEigen and RcppArmadillo in my R package?](http://stackoverflow.com/questions/22624345/can-i-use-both-rcppeigen-and-rcpparmadillo-in-my-package)
+      *  Dirk Eddelbuettel replied: it is not an issue, as most people get by with just one of the two.
+
 ## Convert data
 
 ### From R to C++
