@@ -1,0 +1,236 @@
+---
+title: "RcppEigen use cases"
+author: "Andrey Ziyatdinov"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: united
+    toc: true
+    keep_md: true
+---
+
+```{r options, echo = F}
+opts_chunk$set(fig.path = "figures/", comment = NA, results = 'markup', tidy = F, message = F, warning = F, echo = T, cache = T)
+```
+
+```{r inc, echo = F, cache = FALSE}
+library(plyr)
+library(ggplot2)
+library(gridExtra)
+
+library(pander)
+```
+
+```{r settings, echo = F, cache = FALSE}
+theme_set(theme_light())
+panderOptions('table.split.table', Inf)
+panderOptions('knitr.auto.asis', FALSE)
+```
+
+# Include
+
+```{r include, cache = F}
+library(microbenchmark)
+
+library(Rcpp)
+```
+# Column-wise storage
+
+```{r sim_X_y}
+n <- 1000
+k <- 10
+
+set.seed(1)
+X <- matrix(runif(n * k), nrow = n, ncol = k)
+y <- runif(k)
+
+tX <- t(X)
+ty <- t(y)
+```
+
+## Multiplication using `%*%`
+
+```{r mult}
+str(X %*% y)
+str(ty %*% tX)
+```
+
+## Multiplication using apply
+
+```{r mult2}
+mult_apply <- function(X, y) {
+  prod <- rep(0, nrow(X)) 
+  
+  for(i in 1:ncol(X)) {
+    prod <- prod + X[, i] * y[i]
+  }
+  
+  return(prod)
+}
+
+str(mult_apply(X, y))
+```
+
+## Multiplication using `crossprod`
+
+```{r mult_crossprod}
+str(tcrossprod(X, ty))
+str(tcrossprod(ty, X))
+```
+
+```{r mult_crossprod2}
+str(crossprod(tX, y))
+```
+
+## Multiplication using `mult_RcppEigen`
+
+```{r mult_RcppEigen}
+sourceCpp("src/mult_RcppEigen.cpp")
+```
+
+```{r mult_RcppEigen2}
+str(mult_RcppEigen(X, y))
+```
+
+## Multiplication using `mult_apply_RcppEigen_colwise`
+
+```{r mult_apply_RcppEigen_colwise}
+sourceCpp("src/mult_apply_RcppEigen_colwise.cpp") 
+```
+
+```{r mult_apply_RcppEigen_colwise2}
+str(mult_apply_RcppEigen_colwise(X, y))
+```
+
+## Multiplication using `mult_apply_RcppEigen_rowwise`
+
+```{r mult_apply_RcppEigen_rowwise}
+sourceCpp("src/mult_apply_RcppEigen_rowwise.cpp") 
+```
+
+```{r mult_apply_RcppEigen_rowwise2}
+str(mult_apply_RcppEigen_rowwise(X, y))
+```
+
+## Multiplication using `mult_apply_Rcpp_rowwise`
+
+```{r mult_apply_Rcpp_rowwise}
+sourceCpp("src/mult_apply_Rcpp_rowwise.cpp") 
+```
+
+```{r mult_apply_Rcpp_rowwise2}
+str(mult_apply_Rcpp_rowwise(X, y))
+```
+
+## Multiplication using `mult_apply_Rcpp_rowwise`
+
+```{r mult_apply_Rcpp_colwise}
+sourceCpp("src/mult_apply_Rcpp_colwise.cpp") 
+```
+
+```{r mult_apply_Rcpp_colwise2}
+str(mult_apply_Rcpp_colwise(X, y))
+```
+
+## Benchmarks (k << n)
+
+```{r bench}
+nseq <- seq(100, 2000, length = 5)
+df <- ldply(nseq, function(n) {
+  n <- ceiling(n)
+  k <- 100
+
+  set.seed(1)
+  X <- matrix(runif(n * k), nrow = n, ncol = k)
+  y <- runif(k)
+
+  tX <- t(X)
+  ty <- t(y)
+  
+  cat(" * n:", n, "\n")
+  
+  out <- microbenchmark(
+    X %*% y,
+    mult_apply(X, y),
+    mult_apply_RcppEigen_colwise(X, y),
+    mult_apply_RcppEigen_rowwise(X, y),
+    mult_apply_Rcpp_rowwise(X, y), 
+    mult_apply_Rcpp_colwise(X, y, vectorize = TRUE),
+    mult_apply_Rcpp_colwise(X, y),       
+    mult_RcppEigen(X, y),
+    tcrossprod(X, ty), 
+    crossprod(tX, y),
+    times = 10)
+  
+  df <- subset(as.data.frame(summary(out)), select = c("expr", "median"))
+  df$n <- n
+  
+  return(df)
+})  
+```
+
+```{r bench_plot, dependson = -1}
+ggplot(df, aes(n, median, color = expr)) + geom_point() + geom_line()
+``` 
+
+```{r bench_plot_subset, dependson = -2}
+ggplot(subset(df, n > 1000 & (expr %in% c("mult_apply_RcppEigen_colwise(X, y)",
+  "mult_apply_RcppEigen_rowwise(X, y)", "mult_apply_Rcpp_rowwise(X, y)",
+  "mult_apply_Rcpp_colwise(X, y, vectorize = TRUE)",
+  "mult_apply_Rcpp_colwise(X, y)", "mult_RcppEigen(X, y)"))), 
+  aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+```{r bench_plot_subset2, dependson = -3}
+ggplot(subset(df, n > 1000 & (expr %in% 
+  c("mult_apply_RcppEigen_colwise(X, y)", "mult_apply_Rcpp_colwise(X, y)",
+    "mult_apply_RcppEigen_rowwise(X, y)",
+    "mult_RcppEigen(X, y)"))), 
+  aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+
+## Benchmarks (k == n)
+
+```{r bench2}
+nseq <- seq(500, 5000, length = 5)
+df <- ldply(nseq, function(n) {
+  n <- ceiling(n)
+  k <- n
+
+  set.seed(1)
+  X <- matrix(runif(n * k), nrow = n, ncol = k)
+  y <- runif(k)
+
+  tX <- t(X)
+  ty <- t(y)
+  
+  cat(" * n:", n, "\n")
+  
+  out <- microbenchmark(
+    X %*% y,
+    mult_apply_RcppEigen_colwise(X, y),
+    mult_apply_RcppEigen_rowwise(X, y),
+    mult_RcppEigen(X, y),
+    tcrossprod(X, ty), 
+    times = 10)
+  
+  df <- subset(as.data.frame(summary(out)), select = c("expr", "median"))
+  df$n <- n
+  
+  return(df)
+})  
+```
+
+```{r bench2_plot, dependson = -1}
+ggplot(df, aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+```{r bench2_plot_2, dependson = -1}
+ggplot(subset(df, n > 1000), aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+```{r bench2_plot_3, dependson = -2}
+ggplot(subset(df, n > 1000 & !(expr %in% c("X %*% y", "mult_apply_RcppEigen_rowwise(X, y)"))), 
+  aes(n, median, color = expr)) + geom_point() + geom_line()
+```
