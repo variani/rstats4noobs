@@ -33,7 +33,9 @@ panderOptions('knitr.auto.asis', FALSE)
 library(microbenchmark)
 
 library(Rcpp)
+library(RcppParallel)
 ```
+
 # Column-wise storage
 
 ```{r sim_X_y}
@@ -48,14 +50,16 @@ tX <- t(X)
 ty <- t(y)
 ```
 
-## Multiplication using `%*%`
+## Multiplication functions
+
+### Multiplication using `%*%`
 
 ```{r mult}
 str(X %*% y)
 str(ty %*% tX)
 ```
 
-## Multiplication using apply
+### Multiplication using apply
 
 ```{r mult2}
 mult_apply <- function(X, y) {
@@ -71,7 +75,7 @@ mult_apply <- function(X, y) {
 str(mult_apply(X, y))
 ```
 
-## Multiplication using `crossprod`
+### Multiplication using `crossprod`
 
 ```{r mult_crossprod}
 str(tcrossprod(X, ty))
@@ -82,9 +86,9 @@ str(tcrossprod(ty, X))
 str(crossprod(tX, y))
 ```
 
-## Multiplication using `mult_RcppEigen`
+### Multiplication using `mult_RcppEigen`
 
-```{r mult_RcppEigen}
+```{r mult_RcppEigen, cache = F}
 sourceCpp("src/mult_RcppEigen.cpp")
 ```
 
@@ -92,9 +96,9 @@ sourceCpp("src/mult_RcppEigen.cpp")
 str(mult_RcppEigen(X, y))
 ```
 
-## Multiplication using `mult_apply_RcppEigen_colwise`
+### Multiplication using `mult_apply_RcppEigen_colwise`
 
-```{r mult_apply_RcppEigen_colwise}
+```{r mult_apply_RcppEigen_colwise, cache = F}
 sourceCpp("src/mult_apply_RcppEigen_colwise.cpp") 
 ```
 
@@ -102,9 +106,9 @@ sourceCpp("src/mult_apply_RcppEigen_colwise.cpp")
 str(mult_apply_RcppEigen_colwise(X, y))
 ```
 
-## Multiplication using `mult_apply_RcppEigen_rowwise`
+### Multiplication using `mult_apply_RcppEigen_rowwise`
 
-```{r mult_apply_RcppEigen_rowwise}
+```{r mult_apply_RcppEigen_rowwise, cache = F}
 sourceCpp("src/mult_apply_RcppEigen_rowwise.cpp") 
 ```
 
@@ -112,9 +116,9 @@ sourceCpp("src/mult_apply_RcppEigen_rowwise.cpp")
 str(mult_apply_RcppEigen_rowwise(X, y))
 ```
 
-## Multiplication using `mult_apply_Rcpp_rowwise`
+### Multiplication using `mult_apply_Rcpp_rowwise`
 
-```{r mult_apply_Rcpp_rowwise}
+```{r mult_apply_Rcpp_rowwise, cache = F}
 sourceCpp("src/mult_apply_Rcpp_rowwise.cpp") 
 ```
 
@@ -122,15 +126,46 @@ sourceCpp("src/mult_apply_Rcpp_rowwise.cpp")
 str(mult_apply_Rcpp_rowwise(X, y))
 ```
 
-## Multiplication using `mult_apply_Rcpp_rowwise`
+### Multiplication using `par_mult_apply_Rcpp_rowwise`
 
-```{r mult_apply_Rcpp_colwise}
+```{r par_mult_apply_Rcpp_colwise, cache = F}
+sourceCpp("src/par_mult_apply_Rcpp_colwise.cpp") 
+```
+
+```{r par_mult_apply_Rcpp_colwise2}
+str(par_mult_apply_Rcpp_colwise(X, y, chunkSize = 1, verbose = 1))
+
+str(par_mult_apply_Rcpp_colwise(X, y, chunkSize = ncol(X), verbose = 1))
+```
+
+
+#### Wrapper `par_mult_apply_Rcpp_rowwise`
+
+
+```{r wrap_par_mult_apply_Rcpp_colwise}
+wrap_par_mult_apply_Rcpp_colwise <- function(..., cores = -1, chunkSize = 1)
+{
+  stopifnot(require(RcppParallel))
+  
+  if(!missing(cores)) { 
+    RcppParallel::setThreadOptions(numThreads = cores)
+  }
+  
+  par_mult_apply_Rcpp_colwise(..., chunkSize = chunkSize)
+}
+```
+
+
+### Multiplication using `mult_apply_Rcpp_rowwise`
+
+```{r mult_apply_Rcpp_colwise, cache = F}
 sourceCpp("src/mult_apply_Rcpp_colwise.cpp") 
 ```
 
 ```{r mult_apply_Rcpp_colwise2}
 str(mult_apply_Rcpp_colwise(X, y))
 ```
+
 
 ## Benchmarks (k << n)
 
@@ -226,11 +261,86 @@ df <- ldply(nseq, function(n) {
 ggplot(df, aes(n, median, color = expr)) + geom_point() + geom_line()
 ```
 
-```{r bench2_plot_2, dependson = -1}
+```{r bench2_plot_2, dependson = -2}
 ggplot(subset(df, n > 1000), aes(n, median, color = expr)) + geom_point() + geom_line()
 ```
 
-```{r bench2_plot_3, dependson = -2}
+```{r bench2_plot_3, dependson = -3}
 ggplot(subset(df, n > 1000 & !(expr %in% c("X %*% y", "mult_apply_RcppEigen_rowwise(X, y)"))), 
   aes(n, median, color = expr)) + geom_point() + geom_line()
 ```
+
+## Benchmarks (k == n, parallel)
+
+```{r bench3}
+nseq <- seq(500, 5000, length = 5)
+df <- ldply(nseq, function(n) {
+  n <- ceiling(n)
+  k <- n
+
+  set.seed(1)
+  X <- matrix(runif(n * k), nrow = n, ncol = k)
+  y <- runif(k)
+
+  tX <- t(X)
+  ty <- t(y)
+  
+  cat(" * n:", n, "\n")
+  
+  out <- microbenchmark(
+    mult_RcppEigen(X, y),
+    mult_apply_Rcpp_colwise(X, y), 
+    wrap_par_mult_apply_Rcpp_colwise(X, y, chunkSize = n, cores = 1),
+    wrap_par_mult_apply_Rcpp_colwise(X, y, cores = 2),  
+    times = 10)
+  
+  df <- subset(as.data.frame(summary(out)), select = c("expr", "median"))
+  df$n <- n
+  
+  return(df)
+})  
+```
+
+
+```{r bench3_plot, dependson = -1}
+ggplot(df, aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+```{r bench3_plot_2, dependson = -2}
+ggplot(subset(df, n > 1000), aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+### Benchmarks (k == n, parallel, larger matrices)
+
+```{r bench4}
+nseq <- seq(3000, 7000, length = 5)
+df <- ldply(nseq, function(n) {
+  n <- ceiling(n)
+  k <- n
+
+  set.seed(1)
+  X <- matrix(runif(n * k), nrow = n, ncol = k)
+  y <- runif(k)
+
+  tX <- t(X)
+  ty <- t(y)
+  
+  cat(" * n:", n, "\n")
+  
+  out <- microbenchmark(
+    mult_RcppEigen(X, y),
+    wrap_par_mult_apply_Rcpp_colwise(X, y, chunkSize = 100, cores = 2),  
+    times = 10)
+  
+  df <- subset(as.data.frame(summary(out)), select = c("expr", "median"))
+  df$n <- n
+  
+  return(df)
+})  
+```
+
+
+```{r bench4_plot, dependson = -1}
+ggplot(df, aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+

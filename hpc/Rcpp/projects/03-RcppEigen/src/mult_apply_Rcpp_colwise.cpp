@@ -28,7 +28,7 @@ NumericVector mult_apply_Rcpp_colwise(const NumericMatrix & mat,
     for(int j = 0; j < K; j++) {
       double a = vec(j);
       for(int i = 0; i < N; i++) {
-        rvec[i] +=  a * mat(i, j);
+        rvec(i) +=  a * mat(i, j);
       }
     }
   }

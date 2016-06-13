@@ -15,7 +15,9 @@ Andrey Ziyatdinov
 library(microbenchmark)
 
 library(Rcpp)
+library(RcppParallel)
 ```
+
 # Column-wise storage
 
 
@@ -31,7 +33,9 @@ tX <- t(X)
 ty <- t(y)
 ```
 
-## Multiplication using `%*%`
+## Multiplication functions
+
+### Multiplication using `%*%`
 
 
 ```r
@@ -50,7 +54,7 @@ str(ty %*% tX)
  num [1, 1:1000] 2.53 2.46 2.79 2.16 2.05 ...
 ```
 
-## Multiplication using apply
+### Multiplication using apply
 
 
 ```r
@@ -71,7 +75,7 @@ str(mult_apply(X, y))
  num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
 ```
 
-## Multiplication using `crossprod`
+### Multiplication using `crossprod`
 
 
 ```r
@@ -99,7 +103,7 @@ str(crossprod(tX, y))
  num [1:1000, 1] 2.53 2.46 2.79 2.16 2.05 ...
 ```
 
-## Multiplication using `mult_RcppEigen`
+### Multiplication using `mult_RcppEigen`
 
 
 ```r
@@ -115,7 +119,7 @@ str(mult_RcppEigen(X, y))
  num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
 ```
 
-## Multiplication using `mult_apply_RcppEigen_colwise`
+### Multiplication using `mult_apply_RcppEigen_colwise`
 
 
 ```r
@@ -131,7 +135,7 @@ str(mult_apply_RcppEigen_colwise(X, y))
  num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
 ```
 
-## Multiplication using `mult_apply_RcppEigen_rowwise`
+### Multiplication using `mult_apply_RcppEigen_rowwise`
 
 
 ```r
@@ -147,7 +151,7 @@ str(mult_apply_RcppEigen_rowwise(X, y))
  num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
 ```
 
-## Multiplication using `mult_apply_Rcpp_rowwise`
+### Multiplication using `mult_apply_Rcpp_rowwise`
 
 
 ```r
@@ -163,7 +167,52 @@ str(mult_apply_Rcpp_rowwise(X, y))
  num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
 ```
 
-## Multiplication using `mult_apply_Rcpp_rowwise`
+### Multiplication using `par_mult_apply_Rcpp_rowwise`
+
+
+```r
+sourceCpp("src/par_mult_apply_Rcpp_colwise.cpp") 
+```
+
+
+```r
+str(par_mult_apply_Rcpp_colwise(X, y, chunkSize = 1, verbose = 1))
+```
+
+```
+#chunks: 10
+ num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
+```
+
+```r
+str(par_mult_apply_Rcpp_colwise(X, y, chunkSize = ncol(X), verbose = 1))
+```
+
+```
+#chunks: 1
+ num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
+```
+
+
+#### Wrapper `par_mult_apply_Rcpp_rowwise`
+
+
+
+```r
+wrap_par_mult_apply_Rcpp_colwise <- function(..., cores = -1, chunkSize = 1)
+{
+  stopifnot(require(RcppParallel))
+  
+  if(!missing(cores)) { 
+    RcppParallel::setThreadOptions(numThreads = cores)
+  }
+  
+  par_mult_apply_Rcpp_colwise(..., chunkSize = chunkSize)
+}
+```
+
+
+### Multiplication using `mult_apply_Rcpp_rowwise`
 
 
 ```r
@@ -178,6 +227,7 @@ str(mult_apply_Rcpp_colwise(X, y))
 ```
  num [1:1000] 2.53 2.46 2.79 2.16 2.05 ...
 ```
+
 
 ## Benchmarks (k << n)
 
@@ -317,3 +367,105 @@ ggplot(subset(df, n > 1000 & !(expr %in% c("X %*% y", "mult_apply_RcppEigen_roww
 ```
 
 ![](figures/bench2_plot_3-1.png) 
+
+## Benchmarks (k == n, parallel)
+
+
+```r
+nseq <- seq(500, 5000, length = 5)
+df <- ldply(nseq, function(n) {
+  n <- ceiling(n)
+  k <- n
+
+  set.seed(1)
+  X <- matrix(runif(n * k), nrow = n, ncol = k)
+  y <- runif(k)
+
+  tX <- t(X)
+  ty <- t(y)
+  
+  cat(" * n:", n, "\n")
+  
+  out <- microbenchmark(
+    mult_RcppEigen(X, y),
+    mult_apply_Rcpp_colwise(X, y), 
+    wrap_par_mult_apply_Rcpp_colwise(X, y, chunkSize = n, cores = 1),
+    wrap_par_mult_apply_Rcpp_colwise(X, y, cores = 2),  
+    times = 10)
+  
+  df <- subset(as.data.frame(summary(out)), select = c("expr", "median"))
+  df$n <- n
+  
+  return(df)
+})  
+```
+
+```
+ * n: 500 
+ * n: 1625 
+ * n: 2750 
+ * n: 3875 
+ * n: 5000 
+```
+
+
+
+```r
+ggplot(df, aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+![](figures/bench3_plot-1.png) 
+
+
+```r
+ggplot(subset(df, n > 1000), aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+![](figures/bench3_plot_2-1.png) 
+
+### Benchmarks (k == n, parallel, larger matrices)
+
+
+```r
+nseq <- seq(3000, 7000, length = 5)
+df <- ldply(nseq, function(n) {
+  n <- ceiling(n)
+  k <- n
+
+  set.seed(1)
+  X <- matrix(runif(n * k), nrow = n, ncol = k)
+  y <- runif(k)
+
+  tX <- t(X)
+  ty <- t(y)
+  
+  cat(" * n:", n, "\n")
+  
+  out <- microbenchmark(
+    mult_RcppEigen(X, y),
+    wrap_par_mult_apply_Rcpp_colwise(X, y, chunkSize = 100, cores = 2),  
+    times = 10)
+  
+  df <- subset(as.data.frame(summary(out)), select = c("expr", "median"))
+  df$n <- n
+  
+  return(df)
+})  
+```
+
+```
+ * n: 3000 
+ * n: 4000 
+ * n: 5000 
+ * n: 6000 
+ * n: 7000 
+```
+
+
+
+```r
+ggplot(df, aes(n, median, color = expr)) + geom_point() + geom_line()
+```
+
+![](figures/bench4_plot-1.png) 
+
