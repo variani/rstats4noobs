@@ -6,7 +6,7 @@
 using namespace RcppParallel;
 using namespace Rcpp;
 
-struct ParMultApplyRcppColwise : public Worker
+struct MapRedMultApplyRcppColwise : public Worker
 {
   // source matrix & vector
   const RMatrix<double> mat;
@@ -18,8 +18,10 @@ struct ParMultApplyRcppColwise : public Worker
   unsigned int nchunks; 
      
   // initialize 
-  ParMultApplyRcppColwise(const NumericMatrix & mat, const NumericVector & vec, NumericVector rvec)
+  MapRedMultApplyRcppColwise(const NumericMatrix & mat, const NumericVector & vec, NumericVector rvec)
     : mat(mat), vec(vec), rvec(rvec), nchunks(0) {}
+  MapRedMultApplyRcppColwise(const MapRedMultApplyRcppColwise & mult, Split)
+    : mat(mult.mat), vec(mult.vec), rvec(mult.rvec), nchunks(0) {}
    
   // do multiplication using loops
   void operator()(std::size_t begin, std::size_t end) 
@@ -37,11 +39,16 @@ struct ParMultApplyRcppColwise : public Worker
     
     ++nchunks;
   }
+  
+  // join my value with that of another Sum
+   void join(const MapRedMultApplyRcppColwise & mult) { 
+      nchunks += mult.nchunks; 
+   }
 };
 
 
 // [[Rcpp::export]]
-NumericVector par_mult_apply_Rcpp_colwise(const NumericMatrix & mat, 
+NumericVector mapred_mult_apply_Rcpp_colwise(const NumericMatrix & mat, 
   const NumericVector & vec, unsigned int chunkSize = 1, unsigned int verbose = 0)
 {
   // variables
@@ -56,10 +63,10 @@ NumericVector par_mult_apply_Rcpp_colwise(const NumericMatrix & mat,
   }
 
   // create the worker
-  ParMultApplyRcppColwise mult(mat, vec, rvec);
+  MapRedMultApplyRcppColwise mult(mat, vec, rvec);
      
   // call it with parallelFor
-  parallelFor(0, K, mult, chunkSize);
+  parallelReduce(0, K, mult, chunkSize);
   
   // print diagnostics
   if(verbose > 0) {
