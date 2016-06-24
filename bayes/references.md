@@ -1,3 +1,6 @@
+## Overviews
+
+* http://www.r-bloggers.com/r-stan-and-bayesian-statistics/: see the list of references at the end of the post
 
 ## Books
 
