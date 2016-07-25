@@ -52,8 +52,10 @@ library(partykit)
 
 
 ```r
-findsplit <- function(response, data, weights, alpha = 0.01) 
+findsplit <- function(response, data, weights = NULL, alpha = 0.01) 
 {
+  if (is.null(weights)) weights <- rep(1L, nrow(data))
+  
   ## extract response values from data
   y <- factor(rep(data[[response]], weights))
 
@@ -105,7 +107,9 @@ findsplit <- function(response, data, weights, alpha = 0.01)
 
 
 ```r
-growtree <- function(id = 1L, response, data, weights, minbucket = 30) {
+growtree <- function(id = 1L, response, data, weights = NULL, minbucket = 30) 
+{
+  if (is.null(weights)) weights <- rep(1L, nrow(data))
 
   ## for less than 30 observations stop here
   if (sum(weights) < minbucket) return(partynode(id = id))
