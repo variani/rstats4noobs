@@ -189,3 +189,120 @@ mytree <- function(formula, data, weights = NULL)
 ```{r plot_myttnc, fig.width = 12, fig.height = 9, dependson = -1}
 plot(myttnc)
 ```
+
+# Grow a tree up to certain depth
+
+```{r growtree_depth}
+growtree_depth <- function(id = 1L, depth = 0, response, data, weights = NULL, 
+  minbucket = 30, maxdepth = 0) 
+{
+  if (is.null(weights)) weights <- rep(1L, nrow(data))
+
+  ## for less than 30 observations stop here
+  if(sum(weights) < minbucket | depth >= maxdepth) {
+    return(partynode(id = id, info = list(depth = depth)))
+  }
+
+  ## find best split
+  sp <- findsplit(response, data, weights)
+  ## no split found, stop here
+  if (is.null(sp)) return(partynode(id = id, info = list(depth = depth)))
+
+  ## actually split the data
+  kidids <- kidids_split(sp, data = data)
+
+  ## set up all daugther nodes
+  kids <- vector(mode = "list", length = max(kidids, na.rm = TRUE))
+  for (kidid in 1:length(kids)) {
+  ## select observations for current node
+  w <- weights
+  w[kidids != kidid] <- 0
+  ## get next node id
+  if (kidid > 1) {
+    myid <- max(nodeids(kids[[kidid - 1]]))
+  } else {
+    myid <- id
+  }
+  ## start recursion on this daugther node
+  kids[[kidid]] <- growtree_depth(id = as.integer(myid + 1), depth = depth + 1, 
+    response, data, w, 
+    minbucket = minbucket, maxdepth = maxdepth)
+  }
+
+  ## return nodes
+  return(partynode(id = as.integer(id), split = sp, kids = kids,
+    info = list(depth = depth)))
+}
+```
+
+```{r mytree_depth}
+mytree_depth <- function(formula, data, weights = NULL, maxdepth = 0) 
+{
+  ## name of the response variable
+  response <- all.vars(formula)[1]
+  ## data without missing values, response comes last
+  data <- data[complete.cases(data), c(all.vars(formula)[-1], response)]
+  ## data is factors only
+  stopifnot(all(sapply(data, is.factor)))
+
+  if (is.null(weights)) weights <- rep(1L, nrow(data))
+  ## weights are case weights, i.e., integers
+  stopifnot(length(weights) == nrow(data) &
+    max(abs(weights - floor(weights))) < .Machine$double.eps)
+
+  ## grow tree
+  nodes <- growtree_depth(id = 1L, depth = 0, response, data, weights, maxdepth = maxdepth)
+
+  ## compute terminal node number for each observation
+  fitted <- fitted_node(nodes, data = data)
+  ## return rich constparty object
+  ret <- party(nodes, data = data,
+    fitted = data.frame("(fitted)" = fitted,
+                        "(response)" = data[[response]],
+                        "(weights)" = weights,
+                        check.names = FALSE),
+    terms = terms(formula))
+  as.constparty(ret)
+}
+```
+
+## Fit mytree to Titanic data set
+
+```{r mytree_titanic_depth}
+# default
+mytree_depth(Survived ~ Class + Age + Gender, data = ttnc, maxdepth = 0)
+
+# maxedpth 2
+(t2 <- mytree_depth(Survived ~ Class + Age + Gender, data = ttnc, maxdepth = 2))
+
+# maxedpth 20
+mytree_depth(Survived ~ Class + Age + Gender, data = ttnc, maxdepth = 20)
+```
+
+## Add an additional node
+
+```{r copytree}
+t <- node_party(t2)
+
+copytree <- function(node, id = 1L) 
+{
+  node_id <- node$id
+  stopifnot(node_id == id)
+  
+  sp <- node$split
+  if(is.null(sp)) {
+    return(node)
+  }
+
+  ## actually split the data
+  kids <- vector(mode = "list", length = max(kidids, na.rm = TRUE))
+
+  for(kidid in 1:length(node$kids)) {
+    kids[[kidid]] <- copytree(node$kids[[kidid]], id = node$kids[[kidid]]$id)
+  }
+
+  ## return nodes
+  return(partynode(id = as.integer(id), split = sp, kids = kids,
+    info = node$info))
+}
+```
