@@ -398,3 +398,16 @@ copytree <- function(node, id = 1L)
     info = node$info))
 }
 ```
+
+## Manual interface
+
+
+```r
+tman <- partynode(1L, split = t$split, kids = list(
+  partynode(2L, split = t$kids[[1]]$split, kids = list(
+    partynode(3L),
+    partynode(4L))),
+  partynode(5L, split = t$kids[[2]]$split, kids = list(
+    partynode(6L),
+    partynode(7L)))))
+```
