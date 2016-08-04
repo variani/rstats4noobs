@@ -411,3 +411,179 @@ tman <- partynode(1L, split = t$split, kids = list(
     partynode(6L),
     partynode(7L)))))
 ```
+
+
+```r
+l <- list()
+
+l <- c(l, list(
+  list(id = 1, split = t$split, kids = c(2, 5), depth = 0),
+
+  list(id = 2, split = t$kids[[1]]$split, kids = c(3, 4), depth = 1),
+  list(id = 5, split = t$kids[[2]]$split, kids = c(6, 7), depth = 1),
+  
+  list(id = 3, depth = 2),
+  list(id = 4, depth = 2),
+  list(id = 6, depth = 2),
+  list(id = 7, depth = 2))) 
+```
+
+
+```r
+names(l) <- laply(l, function(x) x$id) 
+```
+
+
+```r
+list2tree <- function(id = 1, nlist) 
+{
+  stopifnot(!is.null(names(nlist)))
+  
+  idstr <- as.character(id)
+  stopifnot(idstr %in% names(nlist))
+  
+  sp <- nlist[[idstr]]$split
+  
+  if(is.null(sp)) {
+    return(partynode(id = as.integer(id)))
+  }
+
+  lkids <- nlist[[idstr]]$kids
+  stopifnot(!is.null(lkids))
+  
+  ## actually split the data
+  kids <- vector(mode = "list", length = length(lkids))
+
+  for(kidid in 1:length(lkids)) {
+    kids[[kidid]] <- list2tree(id = lkids[kidid], nlist)
+  }
+
+  ## return nodes
+  return(partynode(id = as.integer(id), split = sp, kids = kids))
+}
+```
+
+# Grow a tree vertically
+
+
+```r
+# id = 1; response = "Survived"; data = ttnc; weights = rep(1, nrow(ttnc))
+# growtree_vert(1, "Survived", ttnc, rep(1, nrow(ttnc)))
+growtree_vert <- function(id = 1L, response, data, weights = NULL, minbucket = 30) 
+{
+  if (is.null(weights)) weights <- rep(1L, nrow(data))
+
+  ### init
+  depth <- 0
+
+  nlist <- list() 
+  nlist <- c(nlist, list(
+    list(id = 1, weights = weights, depth = depth)))
+  
+  maxid <- 1    
+  
+  ### loop by `depth`
+  while(TRUE) {
+    depth <- depth + 1
+    
+    dvals <- laply(nlist, function(x) x$depth)
+    nind <- which(dvals == (depth - 1))
+    
+    cnt <- 0
+    for(i in seq(1, length(nind))) {
+      k <- nind[i]
+      node <- nlist[[k]]
+      
+      # break on `minbucket`
+      if(sum(node$weights) < minbucket) {
+        next
+      } 
+      
+      # find best split
+      sp <- findsplit(response, data, node$weights)
+      
+      #  break on no split found
+      if(is.null(sp)) {
+        next
+      }
+      
+      # split the data
+      kidids <- kidids_split(sp, data = data)
+      lenkids <- max(kidids, na.rm = TRUE)
+
+      # udapte the node
+      nlist[[k]]$split <- sp
+      nlist[[k]]$kids <- seq(maxid + 1, by = 1, length = lenkids)
+
+      # set up all daugther nodes
+      for(kidid in seq(1, lenkids)) {
+        # select observations for current node
+        w <- node$weights
+        w[kidids != kidid] <- 0
+        
+        # add a new node
+        nlist <- c(nlist, list(
+          list(id = maxid + 1, weights = w, depth = depth)))
+
+        maxid <- maxid + 1
+      }
+      
+      cnt <- cnt + 1
+    }
+    
+    if(cnt == 0) {
+      break
+    }
+  }
+  names(nlist) <- laply(nlist, function(x) x$id) 
+  
+  return(nlist)
+}
+```
+
+
+```r
+# formula = Survived ~ Class + Age + Gender; data = ttnc; weights = NULL
+# mytree_vert(Survived ~ Class + Age + Gender, ttnc)
+mytree_vert <- function(formula, data, weights = NULL) 
+{
+  ## name of the response variable
+  response <- all.vars(formula)[1]
+  ## data without missing values, response comes last
+  data <- data[complete.cases(data), c(all.vars(formula)[-1], response)]
+  ## data is factors only
+  stopifnot(all(sapply(data, is.factor)))
+
+  if (is.null(weights)) weights <- rep(1L, nrow(data))
+  ## weights are case weights, i.e., integers
+  stopifnot(length(weights) == nrow(data) &
+    max(abs(weights - floor(weights))) < .Machine$double.eps)
+
+  ## grow tree
+  nlist <- growtree_vert(id = 1L, response, data, weights)
+  nodes <- list2tree(id = 1, nlist) 
+
+  ## compute terminal node number for each observation
+  fitted <- fitted_node(nodes, data = data)
+  ## return rich constparty object
+  ret <- party(nodes, data = data,
+    fitted = data.frame("(fitted)" = fitted,
+                        "(response)" = data[[response]],
+                        "(weights)" = weights,
+                        check.names = FALSE),
+    terms = terms(formula))
+  as.constparty(ret)
+}
+```
+
+## Applyt to the Titanic dataset
+
+
+```r
+vert <- mytree_vert(Survived ~ Class + Age + Gender, ttnc)
+plot(vert)
+```
+
+![](figures/vert_tree-1.png)<!-- -->
+
+
