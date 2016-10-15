@@ -23,6 +23,7 @@ Discussions
 * http://www.sumsar.net/blog/2013/10/how-do-you-write-your-model-definitions/
 * http://www.magesblog.com/2015/09/bayesian-regression-models-using-stan.html
     * brms R package [github](https://github.com/paul-buerkner/brms): Fit Bayesian generalized linear mixed models using Stan for full Bayesian inference
+* http://andrewgelman.com/2016/06/11/log-sum-of-exponentials/    
 
 ## Tools
 
