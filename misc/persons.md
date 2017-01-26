@@ -9,3 +9,4 @@
 * [Jacob Bien](http://faculty.bscb.cornell.edu/~bien/): works on problems in statistical machine learning and applied statistics, especially developing methods that might be of direct use to scientists (or others with large datasets). A particular interest of his is in using convex optimization to tackle the challenges of high-dimensional datasets.
 * [Sean C. Anderson](http://seananderson.ca/)
       * Figure gallery http://seananderson.ca/portfolio.html
+      * https://twitter.com/eagereyes/status/634094069287772160
