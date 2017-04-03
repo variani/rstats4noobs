@@ -4,6 +4,7 @@
 
 Talks
 
+* http://dirk.eddelbuettel.com/papers/ismNov2009introHPCwithR.pdf
 * [High performance computing in R](https://rpubs.com/wbnicholson/32755) by Will Nicholson
 * http://jaredlander.com/content/2015/04/MakingRGoFasterAndBigger.html
 
