@@ -1,0 +1,163 @@
+---
+title: "bigmemory: parallel computing on objects shared in memory"
+author: "Andrey Ziyatdinov"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: united
+    toc: true
+    keep_md: true
+---
+
+```{r options, echo = F}
+opts_chunk$set(fig.path = "figures/", comment = NA, results = 'markup', tidy = F, message = F, warning = F, echo = T, cache = F)
+```
+
+```{r inc, echo = F, cache = FALSE}
+library(plyr)
+library(ggplot2)
+library(gridExtra)
+
+library(doParallel)
+
+library(pander)
+```
+
+```{r settings, echo = F, cache = FALSE}
+theme_set(theme_light())
+panderOptions('table.split.table', Inf)
+panderOptions('knitr.auto.asis', FALSE)
+```
+
+## Include
+
+```{r inc_bigmemory}
+library(bigmemory)
+```
+
+```{r bigmemory_opts}
+# Assignment will down cast from integer to char
+# Hint: To remove this warning type:  options(bigmemory.typecast.warning=FALSE)
+options(bigmemory.typecast.warning = FALSE)
+```
+
+## Parameters
+
+```{r par}
+cores <- 2
+parallel <- (cores > 1)
+```
+
+### Parallel 
+
+```{r parallel}
+if(parallel) {
+  cl <- makeCluster(cores)
+  registerDoParallel(cl)
+}
+```
+
+## Data
+
+```{r mat}
+n <- 10e3
+m <- 1e3
+#mat <- matrix(rbinom(m*n, 1, 0.5), nrow = n, ncol = m)
+mat <- matrix(rnorm(m*n), nrow = n, ncol = m)
+```
+
+## Shared bigmemory object
+
+```{r bigmat}
+bigmat <- as.big.matrix(mat, shared = TRUE, type = "double")
+bigdesc <- describe(bigmat)
+```
+
+## Computation
+
+### Sequantial (base R)
+
+```{r run_seq_base}
+gc0 <- gc(reset = TRUE) 
+
+t_seq_base <- system.time({
+  out_seq_base <- laply(1:m, function(i) {
+    mean(mat[, i])
+  })
+})
+
+gc_seq_base <- gc()
+```
+
+### Sequantial (bigmemory)
+
+```{r run_seq}
+gc0 <- gc(reset = TRUE) 
+
+t_seq <- system.time({
+  out <- laply(1:m, function(i, bigdesc) {
+  #out_seq <- foreach(i = 1:m, .combine = c) %do% {
+    stopifnot(require(bigmemory))
+    dat <- attach.big.matrix(bigdesc)
+    
+    mean(dat[, i])
+  #}
+  }, bigdesc = bigdesc)  
+})
+
+gc_seq <- gc()
+```
+
+### Parallel (base R)
+
+```{r run_par_base}
+gc0 <- gc(reset = TRUE) 
+
+t_par_base <- system.time({
+  out_par_base <- laply(1:m, function(i) {
+    mean(mat[, i])
+  }, .parallel = parallel)
+})
+
+gc_par_base <- gc()
+```
+
+### Sequantial (bigmemory)
+
+```{r run_par}
+gc0 <- gc(reset = TRUE) 
+
+t_par <- system.time({
+  out_par <- foreach(i = 1:m, .combine = c) %dopar% {
+    stopifnot(require(bigmemory))
+    dat <- attach.big.matrix(bigdesc)
+    
+    mean(dat[, i])
+  }
+})
+
+gc_par <- gc()
+```
+
+### Summary on resources
+
+```{r summary, results = "asis", echo = FALSE}
+gc_all <- list(gc_seq_base, gc_seq, gc_par_base, gc_par)
+t_all <- list(t_seq_base, t_seq, t_par_base, t_par)
+
+tab <- data.frame(
+  copmutation = c("Sequential (base)", "Sequential (bigmemory)", 
+    "Parallel (base)", "Parallel (bigmemory)"),
+  memory_Mb = laply(gc_all, function(x) x["Vcells", 6]),
+  time_s = laply(t_all, function(x) x[["elapsed"]]))
+
+pander(tab)
+```  
+
+# Cleaning
+
+```{r stop_cl}
+if(parallel) {
+  stopCluster(cl)
+}
+```
