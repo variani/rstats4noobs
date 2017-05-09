@@ -2,6 +2,11 @@
 
 - https://rud.is/b/2015/10/22/installing-r-on-os-x-100-homebrew-edition/
   - https://rud.is/b/2015/10/20/installing-r-on-os-x/
+  
+```
+brew update
+brew install r
+```
 
 ## Install R on Ubuntu
 
