@@ -5,3 +5,9 @@ http://www.johnmyleswhite.com/notebook/2009/08/25/updating-r-packages-automatica
 ```
 update.packages(ask = FALSE, dependencies = c("Suggests"))
 ```
+
+## Install custom packages
+
+```
+install.packages("tidyverse", dependencies = TRUE)
+```
