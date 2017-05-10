@@ -10,6 +10,7 @@ brew install r
 
 # libs for R packages
 brew install nlopt # for R package nloptr
+brew install libssh2 # git2r
 ```
 
 ## Install R on Ubuntu
