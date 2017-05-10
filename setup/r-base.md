@@ -13,6 +13,11 @@ brew install nlopt # for R package nloptr
 brew install libssh2 # git2r
 ```
 
+Directories
+
+- `/usr/local/lib/R/3.3/` or `/usr/local/lib/R/3.4/`
+    - for a particular package, e.g. Rcpp: `/usr/local/lib/R/3.4/site-library/Rcpp/include/`
+
 ## Install R on Ubuntu
 
 Start reading with instructions: 
