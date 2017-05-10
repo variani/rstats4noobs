@@ -4,8 +4,12 @@
   - https://rud.is/b/2015/10/20/installing-r-on-os-x/
   
 ```
+# base r
 brew update
 brew install r
+
+# libs for R packages
+brew install nlopt # for R package nloptr
 ```
 
 ## Install R on Ubuntu
