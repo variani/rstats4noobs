@@ -2,7 +2,12 @@
 
 - https://rud.is/b/2015/10/22/installing-r-on-os-x-100-homebrew-edition/
   - https://rud.is/b/2015/10/20/installing-r-on-os-x/
-  
+- https://gist.github.com/sebkopf/9405675
+- http://cran.us.r-project.org/
+    - http://cran.us.r-project.org/bin/macosx/tools/
+    - http://r.research.att.com/libs/
+
+
 ```
 # base r
 brew update
