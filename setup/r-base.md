@@ -47,6 +47,29 @@ pkgutil --forget org.r-project.R.el-capitan.fw.pkg
 The Cocoa GUI called R.app will be installed by default in your Applications folder,  R framework will be installed in /Library/Frameworks, Tcl/Tk and Texinfo will be installed in /usr/local
 ```
 
+Fortran pkg:
+
+```
+GNU Fortran 4.2.3
+for Mac OS X 10.4.4 or higher
+
+This package contains gfortran 4.2.3 for Mac OS X 10.4.4 (Tiger) with Darwin (Apple) drivers. Supported targets are ppc, ppc64, i686 and x86_64. Multiple -arch flags can be specified to build fat binaries. All compilers are universal i.e. run natively on both Intel and PowerPC Macs. Both dynamic and static libraries are supplied.
+
+Requirements:
+- Mac OS X 10.4.4 or higher
+
+All files will be installed in /usr/local
+
+The compiler collection can be used by adding /usr/local/bin to your PATH, e.g.:
+export PATH=$PATH:/usr/local/bin
+
+To remove this package, run: sudo gfortran-uninstall
+
+NOTE: Programs compiled with this Fortran compiler will dynamically link to libraries in /usr/local/lib to prevent incompatibilities with other installed compilers such as Xcode. Use static libraries or supply the libraries with your application if you want such binaries to run anywhere.
+
+The preflight script of this package will fix /usr/loca/lib that was broken by Xcode installation (which creates an infinite symlink) if the problem is detected.
+```
+
 ## Install R on Ubuntu
 
 Start reading with instructions: 
