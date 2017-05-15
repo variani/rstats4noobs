@@ -14,6 +14,8 @@
 brew update
 brew install r
 
+brew install gls
+
 # libs for R packages
 brew install nlopt # for R package nloptr
 brew install libssh2 # git2r
