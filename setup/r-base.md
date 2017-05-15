@@ -8,6 +8,7 @@
     - http://r.research.att.com/libs/
 
 
+### brew
 ```
 # base r
 brew update
@@ -22,6 +23,29 @@ Directories
 
 - `/usr/local/lib/R/3.3/` or `/usr/local/lib/R/3.4/`
     - for a particular package, e.g. Rcpp: `/usr/local/lib/R/3.4/site-library/Rcpp/include/`
+
+### pck from cran
+
+https://rud.is/b/2015/10/20/installing-r-on-os-x/
+
+```
+R 3.4.0
+Version 3.4.0 (2017-04-21) -- "You Stupid Darkness"
+for Mac OS X 10.11 (El Capitan) and higher
+
+This multi-package contains following main components:
+- R Framework 3.4.0            - R.app GUI 1.70
+- Tcl/Tk 8.6.6 for X11 (optional, needed for the tcltk R package)
+- Texinfo 5.2 (optional, needed to build documentation in R packages from sources)
+
+Requirements:
+- Mac OS X 10.11 (El Capitan) or higher
+
+Note: By default the installer upgrades previous El Capitan build of R if present. If you want to keep the previous version, use
+pkgutil --forget org.r-project.R.el-capitan.fw.pkg
+
+The Cocoa GUI called R.app will be installed by default in your Applications folder,  R framework will be installed in /Library/Frameworks, Tcl/Tk and Texinfo will be installed in /usr/local
+```
 
 ## Install R on Ubuntu
 
