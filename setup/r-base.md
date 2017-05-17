@@ -6,7 +6,8 @@
 - http://cran.us.r-project.org/
     - http://cran.us.r-project.org/bin/macosx/tools/
     - http://r.research.att.com/libs/
-
+- fortran
+    - http://stackoverflow.com/questions/23916219/os-x-package-installation-depends-on-gfortran-4-8
 
 ### brew
 ```
