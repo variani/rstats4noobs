@@ -1,5 +1,9 @@
 # rstats4noobs
 
+Tutorials
+
+- A large list of stats/ml topics: http://www.di.fc.ul.pt/~jpn/r/
+
 Unsorted
 
 * http://www.sharpsightlabs.com/learn-r-data-science/
