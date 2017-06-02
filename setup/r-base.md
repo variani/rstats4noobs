@@ -80,6 +80,11 @@ Start reading with instructions:
 * http://cran.r-project.org/bin/linux/ for linux users
 * http://cran.r-project.org/bin/linux/ubuntu/README.html for ubuntu users.
 
+Other tutorials
+
+- [Building R from source](https://carleshf87.wordpress.com/2017/04/05/building-r-from-source/)
+- 
+
 (Step 1) Add repository to your /etc/apt/sources.list file.
 
 For Ubuntu lucid:
