@@ -8,6 +8,15 @@ Talks
 * [High performance computing in R](https://rpubs.com/wbnicholson/32755) by Will Nicholson
 * http://jaredlander.com/content/2015/04/MakingRGoFasterAndBigger.html
 
+## Data formats
+
+File-based storage as alternative to in-memory
+
+Discussion
+
+- [How to deal with hdf5 files in R?](https://stackoverflow.com/questions/15974643/how-to-deal-with-hdf5-files-in-r)
+
+
 ## Software 
 
 H2O
