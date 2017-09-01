@@ -14,3 +14,7 @@ Disable google
 ### Maths
 
 * Equations in rmarkdown https://support.rstudio.com/hc/en-us/articles/200486328-Equations-in-R-Markdown
+
+### Blogs
+
+- Post [Migrating to Hugo and blogdown](http://www.carlboettiger.info/2017/04/19/migrating-to-hugo-and-blogdown/)
