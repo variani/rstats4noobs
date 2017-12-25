@@ -11,6 +11,10 @@ Disable google
 - Other notes
     - http://stackoverflow.com/questions/15844905/how-to-stop-google-indexing-my-github-repository/15987482#15987482
 
+### Tables
+
+- [kableExtra](http://haozhu233.github.io/kableExtra/): Construct complex table with `knitr::kable() + %>%`
+
 ### Maths
 
 * Equations in rmarkdown https://support.rstudio.com/hc/en-us/articles/200486328-Equations-in-R-Markdown
