@@ -83,7 +83,7 @@ Start reading with instructions:
 Other tutorials
 
 - [Building R from source](https://carleshf87.wordpress.com/2017/04/05/building-r-from-source/)
-- 
+- https://www.r-bloggers.com/how-to-install-r-on-linux-ubuntu-16-04-xenial-xerus/
 
 (Step 1) Add repository to your /etc/apt/sources.list file.
 
