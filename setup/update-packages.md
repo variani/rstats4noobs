@@ -1,5 +1,9 @@
 ## Update R packages
 
+```
+update.packages(ask = FALSE, checkBuilt = TRUE)
+```
+
 http://www.johnmyleswhite.com/notebook/2009/08/25/updating-r-packages-automatically/
 
 ```
