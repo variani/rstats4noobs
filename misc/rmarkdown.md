@@ -2,6 +2,10 @@
 
 - Tutorials: http://commonmark.org/help/tutorial/
 
+### Output formats
+
+- How to create a custom MS Word template for `rmarkdown`: https://rmarkdown.rstudio.com/articles_docx.html
+
 ### Publishing
 
 Disable google 
