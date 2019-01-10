@@ -7,3 +7,4 @@
 
 - Multivariate scales for ggplot2: https://github.com/clauswilke/multiscales
 - Geoms to make ridgeline plots with ggplot2: https://github.com/clauswilke/ggridges
+- Extra Coordinate Systems, Geoms, Statistical Transformations & Scales for 'ggplot2' https://github.com/hrbrmstr/ggalt
