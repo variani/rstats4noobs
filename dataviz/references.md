@@ -2,6 +2,7 @@
 
 * http://shinyapps.stat.ubc.ca/r-graph-catalog/ based on the book "Creating More effective graphs"
 * Tufte in R (examples) http://motioninsocial.com/tufte/
+* Publication-ready plots http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/
 
 ## Wrappers to JS libs
 
