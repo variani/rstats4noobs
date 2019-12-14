@@ -6,6 +6,8 @@
 Tutorials on using ggplot2
 
 - [Practical ggplot2](https://wilkelab.org/practicalgg/)
+- [R Graphics Cookbook](https://r-graphics.org/)
+    - See, for example, Chapter https://r-graphics.org/chapter-bar-graph 
 
 ## Extensions
 
