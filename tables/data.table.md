@@ -9,6 +9,9 @@ Introductory materials
 
 * http://www.r-bloggers.com/intro-to-the-data-table-package/
 
+Reading big files fast with `fread`
+- [Convenience features of fread](https://github.com/Rdatatable/data.table/wiki/Convenience-features-of-fread)
+
 ## Benchmarks
 
 * http://jangorecki.github.io/blog/2015-12-11/Solve-common-R-problems-efficiently-with-data.table.html
