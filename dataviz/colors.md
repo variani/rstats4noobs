@@ -2,7 +2,8 @@
 
 Palletes
 
-* https://github.com/dill/beyonce
+- https://github.com/dill/beyonce
+- http://r-graph-gallery.com/ggplot2-color
 
 Cheat Sheets
 
